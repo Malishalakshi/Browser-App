@@ -32,6 +32,7 @@ public class MainSceneController {
         String protocol = null;
         String host = null;
         int port = -1;
+        String path = "/";
 
         //Get protocol
         if((i = url.indexOf( "://" )) != -1){
@@ -48,6 +49,17 @@ public class MainSceneController {
         }else {
             port = protocol.equalsIgnoreCase( "http" ) ? 80 : protocol.equalsIgnoreCase( "https" ) ? 443 : -1;
         }
+        //Get path
+        if((j != -1) && (j != url.length() - 1)){
+            path = url.substring(j+1);
+        }
+        if(host.isBlank()|| port == -1){
+            throw new RuntimeException( "Invalid URL");
+        }
+        System.out.println("protocol = " + protocol);
+        System.out.println("host = " + host);
+        System.out.println("port = " + port);
+        System.out.println("path = " + path);
 
     }
 }

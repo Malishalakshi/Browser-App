@@ -106,6 +106,19 @@ public class MainSceneController {
                 throw new RuntimeException(e);
             }
         }).start();
+        //Write request
+        OutputStream os = socket.getOutputStream();
+        BufferedOutputStream bos = new BufferedOutputStream( os );
+        String httpRequest = """
+                GET %s HTTP/1.1
+                Host: %s
+                User-Agent: dep-browser
+                Connection: close
+                Accept: text/html;
+                
+                """.formatted( path,host );
+        bos.write( httpRequest.getBytes() );
+        bos.flush();
 
     }
 }

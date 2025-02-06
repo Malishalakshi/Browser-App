@@ -28,8 +28,13 @@ public class MainSceneController {
     }
     //Get URL Details
     private void loadWebpage(String url)  {
+        int i = 0;
+        String protocol = null;
+
+        //Get protocol
+        if((i = url.indexOf( "://" )) != -1){
+            protocol = url.substring( 0,i );
+        }else protocol = "http";
 
     }
-
-
 }

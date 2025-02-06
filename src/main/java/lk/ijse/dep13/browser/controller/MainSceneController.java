@@ -21,13 +21,13 @@ public class MainSceneController {
 
     }
 
-    public void txtAddressOnAction(ActionEvent actionEvent)  {
+    public void txtAddressOnAction(ActionEvent actionEvent) throws IOException {
         String url = txtAddress.getText();
         if(url.isBlank()) return;
         loadWebpage(url);
     }
     //Get URL Details
-    private void loadWebpage(String url)  {
+    private void loadWebpage(String url) throws IOException {
         int i = 0;
         String protocol = null;
         String host = null;
@@ -60,6 +60,12 @@ public class MainSceneController {
         System.out.println("host = " + host);
         System.out.println("port = " + port);
         System.out.println("path = " + path);
+
+        //Create socket
+        Socket socket = new Socket(host,port);
+        System.out.println(socket.getInetAddress());
+
+
 
     }
 }

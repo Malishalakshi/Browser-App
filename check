@@ -1,0 +1,129 @@
+package lk.ijse.dep13.browser.controller;
+
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.web.WebView;
+
+import java.io.*;
+import java.net.MalformedURLException;
+import java.net.Socket;
+
+public class MainSceneController {
+    public AnchorPane root;
+    public WebView wbDisplay;
+    public TextField txtAddress;
+
+    public void initialize() throws IOException {
+        txtAddress.setText("http://www.google.lk");
+        loadWebPage(txtAddress.getText());
+        txtAddress.focusedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) Platform.runLater(() -> txtAddress.selectAll());
+        });
+    }
+
+    public void txtAddressOnAction(ActionEvent actionEvent) throws IOException {
+        String url = txtAddress.getText();
+        if (url.isBlank()) return;
+        loadWebPage(url);
+    }
+
+    private void loadWebPage(String url) throws IOException {
+        int i = 0;
+        String protocol = null;
+        String host = null;
+        int port = -1;
+        String path = "/";
+
+
+        if((i = url.indexOf("://")) != -1){
+            protocol = url.substring(0, i);
+        }else protocol = "http";
+
+        int j = url.indexOf("/", i == -1 ? (i=0) : (i = i + 3));
+        host = (j != -1 ? url.substring(i, j) : url.substring(i));
+
+        if((i = host.indexOf(":")) != -1){
+            port = Integer.parseInt(host.substring(i + 1));
+            host = host.substring(0, i);
+        } else {
+            switch (protocol){
+                case "http":
+                    port = 80;
+                    break;
+                case "https":
+                    port = 443;
+                    break;
+                default: port = -1;
+            }
+        }
+
+        if(j != -1 && j != url.length()) path = url.substring(j);
+
+        if(host.isBlank() || port == -1) throw new RuntimeException("Invalid URL");
+
+        System.out.println("Protocol: " + protocol);
+        System.out.println("Host: " + host);
+        System.out.println("Port: " + port);
+        System.out.println("Path: " + path);
+        System.out.println("===========================");
+
+        Socket socket = new Socket(host, port);
+
+        new Thread(() -> {
+            //String httpResponse = null;
+            try {
+                InputStream is = socket.getInputStream();
+                InputStreamReader isr = new InputStreamReader(is);
+                BufferedReader br = new BufferedReader(isr);
+
+                String statusLine = br.readLine();
+                int statusCode = Integer.parseInt(statusLine.split(" ")[1]);
+                boolean redirection = statusCode >= 300 && statusCode <400;
+
+                String line;
+                String contentType = null;
+                while((line = br.readLine()) != null && !line.isBlank()){
+                    String header = line.split(":") [0];
+                    String value = line.split(":") [1];
+
+                    if(redirection){
+                        System.out.println("Redirection");
+                    }else{
+                        if(header.equalsIgnoreCase("Content-Type")){
+                            contentType = value;
+                        }
+                    }
+                }
+                String content = null;
+                if(contentType != null && contentType.contains("text/html")){
+                    while((line = br.readLine()) != null && !line.isBlank()){
+                        content += line;
+                    }
+                }else{
+                    System.out.println("We don't support non-html content");
+                }
+                String finalContent = content;
+               Platform.runLater(() -> {
+                                   wbDisplay.getEngine().loadContent(finalContent);
+                               });
+                           } catch (IOException e) {
+                               throw new RuntimeException(e);
+                           }
+                       }).start();
+
+                       OutputStream os = socket.getOutputStream();
+                       BufferedOutputStream bos = new BufferedOutputStream(os);
+                       String httpRequest = """
+                               GET %s HTTP/1.1
+                               Host: %s
+                               User-Agent: dep-browser
+                               Connection: close
+                               Accept: text/html;
+
+                               """.formatted(path,host);
+                       bos.write(httpRequest.getBytes());
+                       bos.flush();
+                   }
+               }

@@ -16,7 +16,7 @@ public class MainSceneController {
     public WebView webDisplay;
     public void initialize()  {
         txtAddress.focusedProperty().addListener( (observable, oldValue, newValue) -> {
-            if (newValue) txtAddress.selectAll();
+            if (newValue) Platform.runLater(()-> txtAddress.selectAll() ) ;
         } );
 
     }
@@ -65,7 +65,47 @@ public class MainSceneController {
         Socket socket = new Socket(host,port);
         System.out.println(socket.getInetAddress());
 
+        //Read response
+        new Thread(()->{
+            try{
+                InputStream is = socket.getInputStream();
+                InputStreamReader isr = new InputStreamReader( is );
+                BufferedReader br = new BufferedReader( isr );
 
+                String statusLine = br.readLine();
+                int statusCode = Integer.parseInt(statusLine.split(" ")[1]);
+                boolean redirection = 300 <= statusCode && statusCode < 400;
+
+                String line;
+                String contentType = null;
+                while((line = br.readLine()) != null && !line.isBlank()){
+                    String header = line.split(":")[0];
+                    String value = line.split( ":" )[1];
+                    if(redirection){
+                        System.out.println("redirection");
+                    }else {
+                        if(header.equalsIgnoreCase( "content-type" )){
+                            contentType = value;
+                        }
+                    }
+                }
+                String content = null;
+                if(contentType != null && contentType.contains("text/html")){
+                    while ((line = br.readLine()) != null && !line.isBlank()) {
+                        content += line;
+                    }
+                }else {
+                    System.out.println("We don't support not-html content");
+                }
+                String finalContent = content;
+                Platform.runLater(()->{
+                    webDisplay.getEngine().loadContent( finalContent );
+                });
+
+            }catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        }).start();
 
     }
 }
